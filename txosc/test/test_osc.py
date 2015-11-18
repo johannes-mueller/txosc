@@ -34,12 +34,13 @@ class TestArgumentCreation(unittest.TestCase):
     """
     Test the L{osc.CreateArgument} function.
     """
-    
+
     def testCreateFromValue(self):
         self.assertEquals(type(osc.createArgument(True)), osc.BooleanArgument)
         self.assertEquals(type(osc.createArgument(False)), osc.BooleanArgument)
         self.assertEquals(type(osc.createArgument(None)), osc.NullArgument)
         self.assertEquals(type(osc.createArgument(123)), osc.IntArgument)
+        self.assertEquals(type(osc.createArgument(1<<32+1)), osc.Int64Argument)
         self.assertEquals(type(osc.createArgument(3.14156)), osc.FloatArgument)
         # Unicode is not supported.
         self.assertRaises(osc.OscError, osc.createArgument, u'test')
@@ -50,6 +51,7 @@ class TestArgumentCreation(unittest.TestCase):
         self.assertEquals(type(osc.createArgument(123, "N")), osc.NullArgument)
         self.assertEquals(type(osc.createArgument(123, "I")), osc.ImpulseArgument)
         self.assertEquals(type(osc.createArgument(123, "i")), osc.IntArgument)
+        self.assertEquals(type(osc.createArgument(123, "h")), osc.Int64Argument)
         self.assertEquals(type(osc.createArgument(123, "f")), osc.FloatArgument)
         self.assertRaises(osc.OscError, osc.createArgument, 123, "?")
 
@@ -145,12 +147,29 @@ class TestIntArgument(unittest.TestCase):
         test(1)
         test(-1)
         test(1<<31-1)
-        test(-1<<31)        
+        test(-1<<31)
         self.assertRaises(osc.OscError, osc.IntArgument.fromBinary, "\0\0\0") # invalid value
 
     def testIntOverflow(self):
         self.assertRaises(OverflowError, osc.IntArgument(1<<31).toBinary)
         self.assertRaises(OverflowError, osc.IntArgument((-1<<31) - 1).toBinary)
+
+class TestInt64Argument(unittest.TestCase):
+
+    def testToAndFromBinary(self):
+        def test(value):
+            int_arg = osc.Int64Argument.fromBinary(osc.Int64Argument(value).toBinary())[0]
+            self.assertEquals(int_arg.value, value)
+        test(0)
+        test(1)
+        test(-1)
+        test(1<<63-1)
+        test(-1<<63)
+        self.assertRaises(osc.OscError, osc.IntArgument.fromBinary, "\0\0\0") # invalid value
+
+    def testIntOverflow(self):
+        self.assertRaises(OverflowError, osc.IntArgument(1<<63).toBinary)
+        self.assertRaises(OverflowError, osc.IntArgument((-1<<63) - 1).toBinary)
 
 
 class TestColorArgument(unittest.TestCase):

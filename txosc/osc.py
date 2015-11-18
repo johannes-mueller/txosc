@@ -413,7 +413,7 @@ class Int64Argument(Argument):
             raise OverflowError("Integer too large: %d" % self.value)
         if self.value < -1<<63:
             raise OverflowError("Integer too small: %d" % self.value)
-        return struct.pack(">i", int(self.value))
+        return struct.pack(">q", int(self.value))
 
 
     @staticmethod
@@ -695,6 +695,9 @@ def createArgument(value, type_tag=None):
 
     else:
         # Guess the argument type based on the type of the value
+        if kind == int:
+            if value > 1<<31:
+                return _types[long](value)
         if kind in _types.keys():
             return _types[kind](value)
 
