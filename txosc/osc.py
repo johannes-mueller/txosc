@@ -707,6 +707,8 @@ def _stringFromBinary(data):
 def _elementFromBinary(data):
     if data[0] == "/":
         element, data = Message.fromBinary(data)
+    elif data.startswith("#reply"):
+        element, data = Message.fromBinary(data)
     elif data[0] == "#":
         element, data = Bundle.fromBinary(data)
     else:
