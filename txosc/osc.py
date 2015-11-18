@@ -396,13 +396,46 @@ class IntArgument(Argument):
     def __int__(self):
         return int(self.value)
 
+class Int64Argument(Argument):
+    """An L{Argument} representing a 64-bit signed integer.
+
+    This is derived from IntArgument of the txosc module. Will place a
+    pullrequest to txosc soon.
+    """
+    typeTag = "h"
+
+    def _check_type(self):
+        if type(self.value) not in [int, long]:
+            raise TypeError("Value %s must be an integer or a long, not a %s." % (self.value, type(self.value).__name__))
+
+    def toBinary(self):
+        if self.value >= 1<<63:
+            raise OverflowError("Integer too large: %d" % self.value)
+        if self.value < -1<<63:
+            raise OverflowError("Integer too small: %d" % self.value)
+        return struct.pack(">i", int(self.value))
+
+
+    @staticmethod
+    def fromBinary(data):
+        try:
+            i = struct.unpack(">q", data[:8])[0]
+            leftover = data[8:]
+        except struct.error:
+            raise OscError("Too few bytes left to get an int from %s." % (data))
+            #FIXME: do not raise error and return leftover anyways ?
+        return Int64Argument(i), leftover
+
+    def __int__(self):
+        return int(self.value)
+
 class FloatArgument(Argument):
     """
     An L{Argument} representing a 32-bit floating-point value.
     """
 
     typeTag = "f"
-    
+
     def _check_type(self):
         if type(self.value) not in [float, int, long]:
             raise TypeError("Value %s must be a float, an int or a long, not a %s." % (self.value, type(self.value).__name__))
@@ -614,6 +647,7 @@ _types = {
     float: FloatArgument,
     str: StringArgument,
     int: IntArgument,
+    long: Int64Argument,
     bool: BooleanArgument,
     type(None): NullArgument,
     }
@@ -622,6 +656,7 @@ _tags = {
     "b": BlobArgument,
     "f": FloatArgument,
     "i": IntArgument,
+    "h": Int64Argument,
     "s": StringArgument,
     "t": TimeTagArgument,
     }
